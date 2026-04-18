@@ -21,13 +21,13 @@ Installation and Setup:
 1. Clone the repository
 git clone https://github.com/iamghost-alr/Backend-Projects.git
 cd Spotify-User-Backend
-2. Install dependencies
+3. Install dependencies
 npm install
-3. Create .env file
+4. Create .env file
 
 Create a .env file in the root directory and add:
 
-PORT=8000
+PORT=3000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_secret_key
 4. Run the server
