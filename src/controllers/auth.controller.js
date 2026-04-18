@@ -28,8 +28,7 @@ async function registerUser(req, res) {
                 id: user._id,
                 role: user.role
             },
-            process.env.JWT_SECRET,
-            { expiresIn: "1d" }
+            process.env.JWT_SECRET
         );
 
         res.cookie("token", token, {
