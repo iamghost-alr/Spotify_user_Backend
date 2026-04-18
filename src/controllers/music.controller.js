@@ -5,22 +5,6 @@ const { uploadFile } = require("../services/storage.service");
 
 async function createMusic(req, res) {
     try {
-        const token = req.cookies.token;
-
-        if (!token) {
-            return res.status(401).json({
-                message: "Token is required"
-            });
-        }
-
-        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-
-        if (decodedToken.role !== "artist") {
-            return res.status(403).json({
-                message: "Only artists can create music"
-            });
-        }
-
         const { title } = req.body;
         const file = req.file;
 
@@ -43,7 +27,7 @@ async function createMusic(req, res) {
         const music = await musicModel.create({
             title,
             uri: uploadResult.url,
-            artist: decodedToken.id
+            artist: req.user.id
         });
 
         return res.status(201).json({
@@ -61,55 +45,33 @@ async function createMusic(req, res) {
 
 async function createAlbum(req, res) {
     try {
-        const token = req.cookies.token;
-        if (!token) {
-            return res.status(401).json({
-                message: "Token is required"
+        const { title, music } = req.body;
+
+        const musics = await musicModel.find({
+            _id: { $in: music }
+        });
+
+        if (!title) {
+            return res.status(400).json({
+                message: "Title is required"
             });
         }
 
-        try {
-            const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-
-            if (decodedToken.role !== "artist") {
-                return res.status(403).json({
-                    message: "Only artists can create album"
-                });
-            }
-
-            const { title, music } = req.body;
-
-            const musics = await musicModel.find({
-                _id: { $in: music }
-            });
-
-            if (!title) {
-                return res.status(400).json({
-                    message: "Title is required"
-                });
-            }
-
-            if (!musics.length) {
-                return res.status(400).json({
-                    message: "No valid music found"
-                });
-            }
-
-            const album = await albumModel.create({
-                title,
-                musics
-            });
-
-            return res.status(201).json({
-                message: "Album created successfully",
-                data: album
-            });
-
-        } catch (err) {
-            return res.status(401).json({
-                message: "Invalid token"
+        if (!musics.length) {
+            return res.status(400).json({
+                message: "No valid music found"
             });
         }
+
+        const album = await albumModel.create({
+            title,
+            musics
+        });
+
+        return res.status(201).json({
+            message: "Album created successfully",
+            data: album
+        });
 
     } catch (error) {
         return res.status(500).json({
@@ -119,4 +81,37 @@ async function createAlbum(req, res) {
     }
 }
 
-module.exports = { createMusic, createAlbum };
+async function getMusic(req, res) {
+    try {
+        const music = await musicModel
+            .find()
+            .limit(10)
+            .populate("artist", "username");
+        return res.status(200).json({
+            message: "Music fetched successfully",
+            data: music
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Server error",
+            error: error.message
+        });
+    }
+}
+
+async function getAlbum(req, res) {
+    try {
+        const album = await albumModel.find().populate("musics", "title");
+        return res.status(200).json({
+            message: "Album fetched successfully",
+            data: album
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Server error",
+            error: error.message
+        });
+    }
+}
+
+module.exports = { createMusic, createAlbum, getMusic, getAlbum };
